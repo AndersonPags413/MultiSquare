@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #000;
+    }
+    #chat {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="chat">
+    <input type="text" id="playerName" placeholder="Enter your name" />
+    <button id="setName">Set Name</button>
+    <input type="text" id="chatInput" placeholder="Type a message" />
+    <button id="sendMessage">Send</button>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const socket = io();
+    const playerNameInput = document.getElementById('playerName');
+    const setNameButton = document.getElementById('setName');
+    const chatInput = document.getElementById('chatInput');
+    const sendMessageButton = document.getElementById('sendMessage');
+
+    let players = {};
+
+    setNameButton.addEventListener('click', () => {
+      const name = playerNameInput.value.trim();
+      if (name) {
+        socket.emit('setName', name);
+      }
+    });
+
+    sendMessageButton.addEventListener('click', () => {
+      const message = chatInput.value.trim();
+      if (message) {
+        socket.emit('chatMessage', message);
+        chatInput.value = '';
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case 'w':
+          socket.emit('move', 'up');
+          break;
+        case 'a':
+          socket.emit('move', 'left');
+          break;
+        case 's':
+          socket.emit('move', 'down');
+          break;
+        case 'd':
+          socket.emit('move', 'right');
+          break;
+      }
+    });
+
+    socket.on('init', (serverPlayers) => {
+      players = serverPlayers;
+      drawGame();
+    });
+
+    socket.on('update', (serverPlayers) => {
+      players = serverPlayers;
+      drawGame();
+    });
+
+    function drawGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const id in players) {
+        const player = players[id];
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(player.x * 20, player.y * 20, 20, 20);
+        ctx.fillStyle = 'black';
+        ctx.fillText(player.name, player.x * 20, player.y * 20 - 5);
+      }
+    }
+  </script>
+  <header>
+    <script>src="script.js"</script>
+    <script>src="server.js"</script>
+  </header>
+</body>
+</html>
